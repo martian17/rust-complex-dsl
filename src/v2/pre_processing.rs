@@ -8,15 +8,13 @@ use proc_macro::{
     Literal,
 
     Span,
-    Spacing,
-    Delimiter
 };
 use std::fmt::{Display, Write};
 use num_complex::Complex;
 use std::iter;
 use either::Either;
 
-enum ComplexTokenTree{
+pub enum ComplexTokenTree{
     Group(Group),
     Ident(Ident),
     Punct(Punct),
@@ -25,7 +23,7 @@ enum ComplexTokenTree{
 }
 
 impl ComplexTokenTree{
-    fn span(&self) -> Span {
+    pub fn span(&self) -> Span {
         match self {
             ComplexTokenTree::Group(s) => s.span(),
             ComplexTokenTree::Ident(s) => s.span(),
@@ -34,7 +32,7 @@ impl ComplexTokenTree{
             ComplexTokenTree::Imaginary(s) => s.clone(),
         }
     }
-    fn to_string(&self) -> String {
+    pub fn to_string(&self) -> String {
         match self {
             ComplexTokenTree::Group(s) => s.to_string(),
             ComplexTokenTree::Ident(s) => s.to_string(),
@@ -66,7 +64,7 @@ impl DeterministicIter for [ComplexTokenTree; 2]{
 }
 
 
-fn transform_stream (ts: TokenStream) -> impl Iterator<Item = ComplexTokenTree> {
+pub fn transform_stream (ts: TokenStream) -> impl Iterator<Item = ComplexTokenTree> {
     ts.into_iter().flat_map(|token| {
         match token {
             TokenTree::Group(group) => [ComplexTokenTree::Group(group)].into_static_iterator(),
@@ -97,30 +95,3 @@ fn transform_stream (ts: TokenStream) -> impl Iterator<Item = ComplexTokenTree> 
         }
     })
 }
-
-
-// TokenStream -> AST -> Process AST -> TokenStream
-pub fn complex_expression(ts: TokenStream) -> TokenStream {
-    let mut complex_token_stream = transform_stream(ts.clone()).into_iter();
-    while let Some(token) = complex_token_stream.next() {
-        println!("{}", token.to_string());
-    }
-    // return a dummy output
-    return TokenStream::from_iter(vec![
-        TokenTree::from(Ident::new("Complex", Span::call_site())),
-        TokenTree::from(Punct::new(':', Spacing::Joint)),
-        TokenTree::from(Punct::new(':', Spacing::Joint)),
-        TokenTree::from(Ident::new("new", Span::call_site())),
-        TokenTree::from(Group::new(Delimiter::Parenthesis, TokenStream::from_iter(vec![
-            TokenTree::from(Literal::f64_suffixed(2.3)),
-            TokenTree::from(Punct::new(',', Spacing::Alone)),
-            TokenTree::from(Literal::f64_suffixed(3.4)),
-        ]))),
-    ]);
-}
-
-
-
-
-
-
